@@ -12,6 +12,7 @@ acryl-datahub = "0.12"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.1.0"
+vcrpy = "^6.0.1"
 
 [build-system]
 requires = ["poetry-core"]

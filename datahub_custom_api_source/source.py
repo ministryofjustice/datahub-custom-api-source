@@ -1,6 +1,7 @@
 from io import BufferedReader
 from typing import Iterable, Optional
 
+import datahub.emitter.mce_builder as builder
 from datahub.ingestion.api.common import PipelineContext
 from datahub.ingestion.api.decorators import (
     SupportStatus,
@@ -15,7 +16,12 @@ from datahub.ingestion.api.source import (
     TestConnectionReport,
 )
 from datahub.ingestion.api.workunit import MetadataWorkUnit
+from datahub.metadata.com.linkedin.pegasus2avro.common import ChangeAuditStamps, Status
+from datahub.metadata.com.linkedin.pegasus2avro.metadata.snapshot import ChartSnapshot
+from datahub.metadata.com.linkedin.pegasus2avro.mxe import MetadataChangeEvent
+from datahub.metadata.schema_classes import BrowsePathsClass, ChartInfoClass
 
+from .api_client import JusticeDataAPIClient
 from .config import JusticeDataAPIConfig
 
 
@@ -32,17 +38,55 @@ class JusticeDataAPISource(TestableSource):
         self.config = config
         self.report = SourceReport()
         self.fp: Optional[BufferedReader] = None
+        self.client = JusticeDataAPIClient(config.base_url)
+        self.platform_name = "justice-data"
 
     @classmethod
     def create(cls, config_dict, ctx):
         config = JusticeDataAPIConfig.parse_obj(config_dict)
         return cls(ctx, config)
 
-    def get_workunits(self) -> Iterable[MetadataWorkUnit]:
-        return []
+    def get_workunits_internal(self) -> Iterable[MetadataWorkUnit]:
+        # TODO generate metadata for the dashboard itself
+
+        for chart_data in self.client.list_all():
+            mce = self._make_chart(chart_data)
+            wu = MetadataWorkUnit("single_mce", mce=mce)
+            self.report.report_workunit(wu)
+            yield wu
 
     def get_report(self):
         return self.report
+
+    def _make_chart(self, chart_data) -> MetadataChangeEvent:
+        chart_urn = builder.make_chart_urn(self.platform_name, chart_data["id"])
+        chart_snapshot = ChartSnapshot(
+            urn=chart_urn,
+            aspects=[Status(removed=False)],
+        )
+
+        title = chart_data["name"]
+
+        chart_info = ChartInfoClass(
+            description=chart_data.get("description"),
+            title=title,
+            lastModified=ChangeAuditStamps(),
+            chartUrl=self.config.base_url + chart_data.get("permalink", ""),
+        )
+        chart_snapshot.aspects.append(chart_info)
+
+        breadcrumb = chart_data.get("breadcrumb")
+        breadcrumb.append(title)
+        browse_path = BrowsePathsClass(paths=["/justice-data/" + "/".join(breadcrumb)])
+        chart_snapshot.aspects.append(browse_path)
+
+        # TODO: propagate ownership from dashboard
+
+        chart_mce = MetadataChangeEvent(proposedSnapshot=chart_snapshot)
+
+        # TODO: add embed url?
+
+        return chart_mce
 
     @staticmethod
     def test_connection(config_dict: dict) -> TestConnectionReport:
