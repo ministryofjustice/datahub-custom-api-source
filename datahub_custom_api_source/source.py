@@ -19,7 +19,7 @@ from datahub.ingestion.api.workunit import MetadataWorkUnit
 from datahub.metadata.com.linkedin.pegasus2avro.common import ChangeAuditStamps, Status
 from datahub.metadata.com.linkedin.pegasus2avro.metadata.snapshot import ChartSnapshot
 from datahub.metadata.com.linkedin.pegasus2avro.mxe import MetadataChangeEvent
-from datahub.metadata.schema_classes import BrowsePathsClass, ChartInfoClass
+from datahub.metadata.schema_classes import BrowsePathsV2Class, ChartInfoClass
 
 from .api_client import JusticeDataAPIClient
 from .config import JusticeDataAPIConfig
@@ -67,18 +67,20 @@ class JusticeDataAPISource(TestableSource):
 
         title = chart_data["name"]
 
+        # TODO: generate a fully qualified name?
         chart_info = ChartInfoClass(
-            description=chart_data.get("description"),
+            description=chart_data.get("description") or "",
             title=title,
-            lastModified=ChangeAuditStamps(),
+            lastModified=ChangeAuditStamps(),  # TODO: add timestamps here
             chartUrl=self.config.base_url + chart_data.get("permalink", ""),
         )
         chart_snapshot.aspects.append(chart_info)
 
+        # TODO: browse paths requires IDs, not just titles
         breadcrumb = chart_data.get("breadcrumb")
         breadcrumb.append(title)
-        browse_path = BrowsePathsClass(paths=["/justice-data/" + "/".join(breadcrumb)])
-        chart_snapshot.aspects.append(browse_path)
+        # browse_path = BrowsePathsV2Class(path=["/justice-data/" + "/".join(breadcrumb)])
+        # chart_snapshot.aspects.append(browse_path)
 
         # TODO: propagate ownership from dashboard
 
