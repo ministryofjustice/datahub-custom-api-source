@@ -40,6 +40,7 @@ class JusticeDataAPISource(TestableSource):
         self.fp: Optional[BufferedReader] = None
         self.client = JusticeDataAPIClient(config.base_url)
         self.platform_name = "justice-data"
+        self.web_url = self.config.base_url.removesuffix("/api").removesuffix("/api/")
 
     @classmethod
     def create(cls, config_dict, ctx):
@@ -72,7 +73,7 @@ class JusticeDataAPISource(TestableSource):
             description=chart_data.get("description") or "",
             title=title,
             lastModified=ChangeAuditStamps(),  # TODO: add timestamps here
-            chartUrl=self.config.base_url + chart_data.get("permalink", ""),
+            chartUrl=self.web_url + chart_data.get("permalink", ""),
         )
         chart_snapshot.aspects.append(chart_info)
 
