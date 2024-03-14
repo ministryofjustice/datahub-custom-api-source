@@ -1,0 +1,4 @@
+source:
+  type: datahub_custom_api_source.source.JusticeDataAPISource
+  config:
+    base_url: "https://data.justice.gov.uk/api"
