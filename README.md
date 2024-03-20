@@ -4,11 +4,18 @@
 
 This repository integrates the [Justice Data API](https://data.justice.gov.uk/api/) with Datahub.
 
+## Prerequisites
+
+[Set up the Datahub CLI](https://github.com/ministryofjustice/data-catalogue-metadata?tab=readme-ov-file#first-time-setup)
+
+
 ## Usage
 
-See https://datahubproject.io/docs/how/add-custom-ingestion-source/
+This ingestion currently needs to be run via the Datahub CLI.
 
-recipe.yaml
+First run `poetry shell` to make sure this library is on the python path.
+
+Then create recipe.yaml:
 
 ```yaml
 source:
@@ -17,6 +24,7 @@ source:
     base_url: "https://data.justice.gov.uk/api"
 ```
 
-```
-datahub ingest -c recipe.yaml
-```
+Finally, run `datahub ingest -c recipe.yaml`
+
+See https://datahubproject.io/docs/how/add-custom-ingestion-source/ for more information.
+
